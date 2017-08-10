@@ -1,15 +1,16 @@
 package com.coolweather.android;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.coolweather.android.gson.Weather;
+import com.coolweather.android.service.AutoUpdateService;
 import com.coolweather.android.util.HttpUtil;
 import com.coolweather.android.util.Utility;
 import okhttp3.Call;
@@ -31,9 +33,6 @@ import java.io.IOException;
 
 public class WeatherActivity extends AppCompatActivity {
     private static final String TAG = "WeatherActivity";
-
-    public SwipeRefreshLayout swipeRefresh;
-    public DrawerLayout drawerLayout;
 
     private ScrollView weatherLayout;
     private TextView titleCity;
@@ -48,6 +47,9 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView sportText;
     private ImageView bingPicImg;
     private Button navButton;
+
+    public SwipeRefreshLayout swipeRefresh;
+    public DrawerLayout drawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,10 +89,7 @@ public class WeatherActivity extends AppCompatActivity {
             weatherLayout.setVisibility(View.INVISIBLE);
             requestWeather(weatherId);
         }
-        swipeRefresh.setOnRefreshListener(() -> {
-            requestWeather(weatherId);
-            Toast.makeText(this, "刷新成功", Toast.LENGTH_SHORT).show();
-        });
+        swipeRefresh.setOnRefreshListener(() -> requestWeather(weatherId));
         String bingPic = prefs.getString("bing_pic", null);
         if (bingPic != null) {
             Glide.with(this).load(bingPic).into(bingPicImg);
@@ -125,6 +124,7 @@ public class WeatherActivity extends AppCompatActivity {
                         editor.putString("weather", responseText);
                         editor.apply();
                         showWeatherInfo(weather);
+                        Toast.makeText(WeatherActivity.this, "刷新成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
                     }
@@ -171,6 +171,8 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText.setText(carWash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
+        Intent intent = new Intent(this, AutoUpdateService.class);
+        startService(intent);
     }
 
     private void loadBingPic() {
